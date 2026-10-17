@@ -1,1 +1,157 @@
 
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rush Garage | Car Passport</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101114;color:#f5f5f5;font-family:Arial,sans-serif}
+header{text-align:center;padding:32px 15px;background:#202126;border-bottom:3px solid #e63939}
+.logo{font-size:32px;font-weight:900}
+.logo span{color:#ff4141}
+header p{color:#ccc}
+main{width:92%;max-width:600px;margin:28px auto}
+.panel{background:#1c1e23;border:1px solid #34363d;border-radius:15px;padding:22px;margin-bottom:20px}
+h2{margin-top:0}
+label{display:block;margin:15px 0 8px}
+input{width:100%;padding:14px;border-radius:9px;border:1px solid #555;background:#111216;color:white;font-size:16px}
+button{width:100%;padding:14px;margin-top:13px;border:0;border-radius:9px;background:#e63939;color:white;font-size:16px;font-weight:bold}
+.language{width:auto;padding:8px 14px;background:#383a40}
+.muted{color:#bbb;line-height:1.6}
+.message{color:#ffaaaa;line-height:1.6}
+.record{padding:14px 0;border-bottom:1px solid #444;line-height:1.7}
+.car-title{color:#ff5555}
+footer{text-align:center;padding:20px;color:#aaa}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">RUSH <span>GARAGE</span></div>
+  <p id="tagline">جواز السيارة الإلكتروني وسجل الصيانة</p>
+  <button class="language" id="langButton" onclick="toggleLanguage()">English</button>
+</header>
+
+<main>
+  <section class="panel">
+    <h2 id="title">افحص سجل سيارتك</h2>
+    <p id="intro" class="muted">أدخل كود السيارة لمعرفة سجل الصيانة.</p>
+    <form id="lookupForm">
+      <label id="codeLabel" for="accessCode">كود السيارة</label>
+      <input id="accessCode" required minlength="12" autocomplete="off" placeholder="RG-...">
+      <button id="searchButton" type="submit">عرض سجل السيارة</button>
+    </form>
+    <p id="message" class="message" role="status"></p>
+  </section>
+
+  <section id="results" class="panel" hidden>
+    <h2 id="carHeading">معلومات السيارة</h2>
+    <div id="carInfo"></div>
+    <h2 id="historyHeading">سجل الصيانة</h2>
+    <div id="records"></div>
+  </section>
+</main>
+
+<footer>Rush Garage · Car Passport</footer>
+
+<script>
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+
+let english = false;
+
+function toggleLanguage(){
+  english = !english;
+  document.documentElement.lang = english ? "en" : "ar";
+  document.documentElement.dir = english ? "ltr" : "rtl";
+  document.getElementById("tagline").textContent = english ? "Your digital car service history" : "جواز السيارة الإلكتروني وسجل الصيانة";
+  document.getElementById("langButton").textContent = english ? "العربية" : "English";
+  document.getElementById("title").textContent = english ? "Check your car history" : "افحص سجل سيارتك";
+  document.getElementById("intro").textContent = english ? "Enter your car passport code to view service history." : "أدخل كود السيارة لمعرفة سجل الصيانة.";
+  document.getElementById("codeLabel").textContent = english ? "Car access code" : "كود السيارة";
+  document.getElementById("searchButton").textContent = english ? "View car history" : "عرض سجل السيارة";
+  document.getElementById("carHeading").textContent = english ? "Car information" : "معلومات السيارة";
+  document.getElementById("historyHeading").textContent = english ? "Service history" : "سجل الصيانة";
+}
+
+document.getElementById("lookupForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  const message = document.getElementById("message");
+  const button = document.getElementById("searchButton");
+  const results = document.getElementById("results");
+  message.textContent = "";
+  results.hidden = true;
+
+  if(SUPABASE_URL.includes("_HERE") || SUPABASE_KEY.includes("_HERE")){
+    message.textContent = english ? "Please configure your Supabase URL and publishable key first." : "لازم تحط رابط Supabase والمفتاح العام أولاً.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = english ? "Searching..." : "عم نفتّش...";
+
+  try{
+    const response = await fetch(SUPABASE_URL.replace(/\/$/,"") + "/rest/v1/rpc/lookup_car_history",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer "+SUPABASE_KEY
+      },
+      body:JSON.stringify({p_access_code:document.getElementById("accessCode").value.trim()})
+    });
+
+    if(!response.ok) throw new Error("Request failed");
+    const data = await response.json();
+
+    if(!data || !data.car){
+      message.textContent = english ? "Car not found. Check the code." : "ما لقينا سيارة بهالكود. تأكّد من الكود.";
+      return;
+    }
+
+    const carInfo = document.getElementById("carInfo");
+    carInfo.replaceChildren();
+    [[english?"Make":"الشركة",data.car.make],[english?"Model":"الموديل",data.car.model],[english?"Year":"سنة الصنع",data.car.year]].forEach(function(item){
+      if(item[1]!==null && item[1]!==undefined && item[1]!==""){
+        const p=document.createElement("p");
+        p.textContent=item[0]+": "+item[1];
+        carInfo.appendChild(p);
+      }
+    });
+
+    const records=document.getElementById("records");
+    records.replaceChildren();
+
+    if(!data.service_records || data.service_records.length===0){
+      records.textContent=english?"No service records yet.":"ما في سجلات صيانة مسجّلة بعد.";
+    }else{
+      data.service_records.forEach(function(r){
+        const article=document.createElement("article");
+        article.className="record";
+        const heading=document.createElement("strong");
+        heading.className="car-title";
+        heading.textContent=(r.service_type || (english?"Service":"صيانة"))+(r.service_date?" · "+r.service_date:"");
+        article.appendChild(heading);
+        [[english?"Description":"الوصف",r.description],[english?"Parts used":"قطع مستعملة",r.parts_used],[english?"Labor cost":"أجرة اليد العاملة",r.labor_cost],[english?"Parts cost":"كلفة القطع",r.parts_cost]].forEach(function(item){
+          if(item[1]!==null && item[1]!==undefined && item[1]!==""){
+            const p=document.createElement("p");
+            p.textContent=item[0]+": "+item[1];
+            article.appendChild(p);
+          }
+        });
+        records.appendChild(article);
+      });
+    }
+    results.hidden=false;
+  }catch(error){
+    message.textContent=english?"Connection failed. Check your Supabase settings.":"فشل الاتصال. تأكّد من إعدادات Supabase.";
+  }finally{
+    button.disabled=false;
+    button.textContent=english?"View car history":"عرض سجل السيارة";
+  }
+});
+</script>
+</body>
+</html>
+
