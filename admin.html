@@ -2,32 +2,323 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rush Garage | Admin</title>
-  <style>
-    body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif;padding:20px}
-    .box{max-width:600px;margin:30px auto;background:#1d1d1d;padding:24px;border-radius:14px;border-top:4px solid #e21b2d}
-    h1{color:#f12636;text-align:center}
-    input,button{box-sizing:border-box;width:100%;padding:13px;margin:8px 0;border-radius:7px;border:1px solid #555;font-size:16px}
-    input{background:#292929;color:white}
-    button{background:#d7192d;color:white;font-weight:bold;cursor:pointer;border:0}
-    .note{color:#ccc;font-size:14px;line-height:1.7}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rush Garage | Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101010;color:#fff;font-family:Arial,sans-serif;padding:16px}
+main{max-width:720px;margin:20px auto}
+header{text-align:center;border-bottom:3px solid #e21b2d;padding:15px}
+h1{color:#ed2538;margin:5px}
+.card{background:#1c1c1c;padding:20px;border-radius:12px;margin:18px 0;border:1px solid #333}
+h2{color:#ff3345;font-size:20px}
+input,button{width:100%;padding:13px;margin:7px 0;border-radius:7px;font-size:16px}
+input{background:#292929;border:1px solid #555;color:white}
+button{background:#df1d30;color:white;border:0;font-weight:bold;cursor:pointer}
+.secondary{background:#333}
+.hidden{display:none}
+#msg{white-space:pre-wrap;line-height:1.7;color:#ffd5d5}
+</style>
 </head>
 <body>
-  <div class="box">
-    <h1>RUSH GARAGE</h1>
-    <p style="text-align:center">لوحة الإدارة الخاصة بالكراج</p>
-    <p class="note">هيدي واجهة أولية. تسجيل الدخول وحفظ بيانات السيارات بدهن ربط آمن مع Supabase قبل الاستخدام.</p>
-    <h3>بيانات السيارة</h3>
-    <input placeholder="اسم الزبون">
-    <input placeholder="رقم اللوحة">
-    <input placeholder="نوع السيارة">
-    <input placeholder="الموديل">
-    <input placeholder="سنة الصنع" type="number">
-    <input placeholder="كود السيارة الفريد">
-    <button type="button" onclick="alert('بعد ربط Supabase رح نفعّل حفظ البيانات')">حفظ السيارة</button>
-  </div>
+<main>
+<header>
+<h1>RUSH GARAGE</h1>
+<p>لوحة إدارة السيارات والصيانة</p>
+</header>
+
+<section class="card" id="login">
+<h2>تسجيل الدخول</h2>
+<input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+<input id="password" type="password" placeholder="كلمة السر" autocomplete="current-password">
+<button id="loginBtn">دخول</button>
+<p>استعمل حسابك الموجود في Supabase Authentication.</p>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="card">
+<h2>إضافة سيارة</h2>
+<input id="customer" placeholder="اسم الزبون">
+<input id="plate" placeholder="رقم اللوحة">
+<input id="make" placeholder="ماركة السيارة (مثلاً Volkswagen)">
+<input id="model" placeholder="الموديل (مثلاً Tiguan)">
+<input id="year" type="number" placeholder="سنة الصنع">
+<input id="code" placeholder="كود فريد للزبون (مثلاً RG-2026-003)">
+<button id="carBtn">حفظ السيارة</button>
+</div>
+
+<div class="card">
+<h2>إضافة سجل صيانة</h2>
+<input id="carCode" placeholder="كود السيارة">
+<input id="serviceType" placeholder="نوع الصيانة">
+<input id="description" placeholder="التفاصيل وقطع الغيار">
+<input id="cost" type="number" min="0" step="0.01" placeholder="الكلفة">
+<input id="serviceDate" type="date">
+<button id="serviceBtn">حفظ الصيانة</button>
+</div>
+<button class="secondary" id="logoutBtn">تسجيل الخروج</button>
+</section>
+<p id="msg" role="status"></p>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://wcudutpmguznusjgsfpc.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = '
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rush Garage | Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101010;color:#fff;font-family:Arial,sans-serif;padding:16px}
+main{max-width:720px;margin:20px auto}
+header{text-align:center;border-bottom:3px solid #e21b2d;padding:15px}
+h1{color:#ed2538;margin:5px}
+.card{background:#1c1c1c;padding:20px;border-radius:12px;margin:18px 0;border:1px solid #333}
+h2{color:#ff3345;font-size:20px}
+input,button{width:100%;padding:13px;margin:7px 0;border-radius:7px;font-size:16px}
+input{background:#292929;border:1px solid #555;color:white}
+button{background:#df1d30;color:white;border:0;font-weight:bold;cursor:pointer}
+.secondary{background:#333}
+.hidden{display:none}
+#msg{white-space:pre-wrap;line-height:1.7;color:#ffd5d5}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>RUSH GARAGE</h1>
+<p>لوحة إدارة السيارات والصيانة</p>
+</header>
+
+<section class="card" id="login">
+<h2>تسجيل الدخول</h2>
+<input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+<input id="password" type="password" placeholder="كلمة السر" autocomplete="current-password">
+<button id="loginBtn">دخول</button>
+<p>استعمل حسابك الموجود في Supabase Authentication.</p>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="card">
+<h2>إضافة سيارة</h2>
+<input id="customer" placeholder="اسم الزبون">
+<input id="plate" placeholder="رقم اللوحة">
+<input id="make" placeholder="ماركة السيارة (مثلاً Volkswagen)">
+<input id="model" placeholder="الموديل (مثلاً Tiguan)">
+<input id="year" type="number" placeholder="سنة الصنع">
+<input id="code" placeholder="كود فريد للزبون (مثلاً RG-2026-003)">
+<button id="carBtn">حفظ السيارة</button>
+</div>
+
+<div class="card">
+<h2>إضافة سجل صيانة</h2>
+<input id="carCode" placeholder="كود السيارة">
+<input id="serviceType" placeholder="نوع الصيانة">
+<input id="description" placeholder="التفاصيل وقطع الغيار">
+<input id="cost" type="number" min="0" step="0.01" placeholder="الكلفة">
+<input id="serviceDate" type="date">
+<button id="serviceBtn">حفظ الصيانة</button>
+</div>
+<button class="secondary" id="logoutBtn">تسجيل الخروج</button>
+</section>
+<p id="msg" role="status"></p>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://wcudutpmguznusjgsfpc.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'PASTE_YOUR_PUBLISHABLE_KEY_HERE';
+
+const msg = document.getElementById('msg');
+const login = document.getElementById('login');
+const dashboard = document.getElementById('dashboard');
+const say = text => msg.textContent = text;
+
+if (SUPABASE_PUBLISHABLE_KEY === 'PASTE_YOUR_PUBLISHABLE_KEY_HERE') {
+  say('قبل التشغيل: استبدل PASTE_YOUR_PUBLISHABLE_KEY_HERE بالمفتاح العام Publishable Key من Supabase.');
+} else {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  async function refreshSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    login.classList.toggle('hidden', !!session);
+    dashboard.classList.toggle('hidden', !session);
+  }
+
+  document.getElementById('loginBtn').onclick = async () => {
+    say('جارٍ تسجيل الدخول...');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value
+    });
+    if (error) return say('تعذّر تسجيل الدخول: ' + error.message);
+    say('تم تسجيل الدخول.');
+    await refreshSession();
+  };
+
+  document.getElementById('carBtn').onclick = async () => {
+    const make = document.getElementById('make').value.trim();
+    const model = document.getElementById('model').value.trim();
+    const year = Number(document.getElementById('year').value);
+    const code = document.getElementById('code').value.trim();
+    const customer = document.getElementById('customer').value.trim();
+    const plate = document.getElementById('plate').value.trim();
+
+    if (!make || !model || !year || !code || !customer) {
+      return say('عبّي اسم الزبون والماركة والموديل والسنة والكود.');
+    }
+
+    say('جارٍ حفظ السيارة...');
+    const { error } = await supabase.from('cars').insert({
+      make, model, year, access_code: code,
+      customer_name: customer,
+      plate_number: plate || null
+    });
+    if (error) return say('لم تُحفظ السيارة: ' + error.message);
+    say('تم حفظ السيارة بنجاح.');
+  };
+
+  document.getElementById('serviceBtn').onclick = async () => {
+    const code = document.getElementById('carCode').value.trim();
+    const service_type = document.getElementById('serviceType').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const cost = document.getElementById('cost').value;
+    const service_date = document.getElementById('serviceDate').value;
+
+    if (!code || !service_type) {
+      return say('أدخل كود السيارة ونوع الصيانة.');
+    }
+
+    say('جارٍ البحث عن السيارة...');
+    const { data: car, error: findError } = await supabase
+      .from('cars').select('id').eq('access_code', code).maybeSingle();
+
+    if (findError) return say('تعذّر البحث: ' + findError.message);
+    if (!car) return say('ما لقينا سيارة بهالكود.');
+
+    const record = {
+      car_id: car.id,
+      service_type,
+      description: description || null
+    };
+    if (service_date) record.service_date = service_date;
+    if (cost !== '') record.cost = Number(cost);
+
+    const { error } = await supabase.from('service_records').insert(record);
+    if (error) return say('لم يُحفظ سجل الصيانة: ' + error.message);
+    say('تم حفظ سجل الصيانة.');
+  };
+
+  document.getElementById('logoutBtn').onclick = async () => {
+    await supabase.auth.signOut();
+    say('تم تسجيل الخروج.');
+    await refreshSession();
+  };
+
+  supabase.auth.onAuthStateChange(() => refreshSession());
+  refreshSession();
+}
+</script>
+</body>
+</html>
+';
+
+const msg = document.getElementById('msg');
+const login = document.getElementById('login');
+const dashboard = document.getElementById('dashboard');
+const say = text => msg.textContent = text;
+
+if (SUPABASE_PUBLISHABLE_KEY === 'PASTE_YOUR_PUBLISHABLE_KEY_HERE') {
+  say('قبل التشغيل: استبدل PASTE_YOUR_PUBLISHABLE_KEY_HERE بالمفتاح العام Publishable Key من Supabase.');
+} else {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  async function refreshSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    login.classList.toggle('hidden', !!session);
+    dashboard.classList.toggle('hidden', !session);
+  }
+
+  document.getElementById('loginBtn').onclick = async () => {
+    say('جارٍ تسجيل الدخول...');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value
+    });
+    if (error) return say('تعذّر تسجيل الدخول: ' + error.message);
+    say('تم تسجيل الدخول.');
+    await refreshSession();
+  };
+
+  document.getElementById('carBtn').onclick = async () => {
+    const make = document.getElementById('make').value.trim();
+    const model = document.getElementById('model').value.trim();
+    const year = Number(document.getElementById('year').value);
+    const code = document.getElementById('code').value.trim();
+    const customer = document.getElementById('customer').value.trim();
+    const plate = document.getElementById('plate').value.trim();
+
+    if (!make || !model || !year || !code || !customer) {
+      return say('عبّي اسم الزبون والماركة والموديل والسنة والكود.');
+    }
+
+    say('جارٍ حفظ السيارة...');
+    const { error } = await supabase.from('cars').insert({
+      make, model, year, access_code: code,
+      customer_name: customer,
+      plate_number: plate || null
+    });
+    if (error) return say('لم تُحفظ السيارة: ' + error.message);
+    say('تم حفظ السيارة بنجاح.');
+  };
+
+  document.getElementById('serviceBtn').onclick = async () => {
+    const code = document.getElementById('carCode').value.trim();
+    const service_type = document.getElementById('serviceType').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const cost = document.getElementById('cost').value;
+    const service_date = document.getElementById('serviceDate').value;
+
+    if (!code || !service_type) {
+      return say('أدخل كود السيارة ونوع الصيانة.');
+    }
+
+    say('جارٍ البحث عن السيارة...');
+    const { data: car, error: findError } = await supabase
+      .from('cars').select('id').eq('access_code', code).maybeSingle();
+
+    if (findError) return say('تعذّر البحث: ' + findError.message);
+    if (!car) return say('ما لقينا سيارة بهالكود.');
+
+    const record = {
+      car_id: car.id,
+      service_type,
+      description: description || null
+    };
+    if (service_date) record.service_date = service_date;
+    if (cost !== '') record.cost = Number(cost);
+
+    const { error } = await supabase.from('service_records').insert(record);
+    if (error) return say('لم يُحفظ سجل الصيانة: ' + error.message);
+    say('تم حفظ سجل الصيانة.');
+  };
+
+  document.getElementById('logoutBtn').onclick = async () => {
+    await supabase.auth.signOut();
+    say('تم تسجيل الخروج.');
+    await refreshSession();
+  };
+
+  supabase.auth.onAuthStateChange(() => refreshSession());
+  refreshSession();
+}
+</script>
 </body>
 </html>
