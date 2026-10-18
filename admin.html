@@ -7,19 +7,19 @@
 <title>Rush Garage | Admin</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101010;color:#fff;font-family:Arial,sans-serif;padding:16px}
-main{max-width:760px;margin:20px auto}
-header{text-align:center;border-bottom:3px solid #e21b2d;padding:16px}
-h1{color:#e21b2d;margin:5px}
-.card{background:#1c1c1c;padding:20px;border-radius:12px;margin:18px 0;border:1px solid #333}
-h2{color:#ff3545;font-size:20px}
-input,button,select,textarea{width:100%;padding:13px;margin:7px 0;border-radius:7px;font-size:16px}
-input,select,textarea{background:#292929;border:1px solid #555;color:white}
+body{margin:0;background:#101010;color:#fff;font-family:Arial,sans-serif}
+main{max-width:900px;margin:30px auto;padding:18px}
+header{border-bottom:3px solid #e21b2d;padding:20px 0;text-align:center}
+h1{color:#e21b2d;margin:0}
+.card{background:#1c1c1c;border:1px solid #383838;border-radius:12px;padding:20px;margin:18px 0}
+input,select,textarea,button{width:100%;padding:12px;margin:7px 0;border-radius:7px;font-size:16px}
+input,select,textarea{background:#292929;color:white;border:1px solid #555}
 button{background:#e21b2d;color:white;border:0;font-weight:bold;cursor:pointer}
-.secondary{background:#444}
+.secondary{background:#333}
 .hidden{display:none}
-.note{color:#ccc;font-size:14px;line-height:1.7}
-#msg{white-space:pre-wrap;line-height:1.7}
+.msg{color:#ff7777;white-space:pre-wrap}
+.item{border-bottom:1px solid #444;padding:12px 0;overflow-wrap:anywhere}
+small{color:#bbb}
 </style>
 </head>
 <body>
@@ -30,66 +30,70 @@ button{background:#e21b2d;color:white;border:0;font-weight:bold;cursor:pointer}
 </header>
 
 <section id="login" class="card">
-<h2>تسجيل دخول الإدارة</h2>
-<p class="note">سجّل الدخول بحسابك المسجّل في Supabase Authentication.</p>
-<input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
-<input id="password" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+<h3>تسجيل دخول الإدارة</h3>
+<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="password" type="password" placeholder="كلمة المرور">
 <button id="loginBtn">تسجيل الدخول</button>
+<p id="loginMsg" class="msg"></p>
 </section>
 
 <section id="dashboard" class="hidden">
 <div class="card">
-<h2>إضافة سيارة جديدة</h2>
-<input id="make" placeholder="الشركة — Volkswagen">
-<input id="model" placeholder="الموديل — Golf / Tiguan">
-<input id="year" type="number" placeholder="سنة الصنع">
+<h3>إضافة سيارة</h3>
 <input id="customer" placeholder="اسم الزبون">
+<input id="make" placeholder="الشركة — Volkswagen">
+<input id="model" placeholder="الموديل — Golf">
+<input id="year" type="number" placeholder="سنة الصنع">
 <input id="plate" placeholder="رقم اللوحة">
-<input id="code" placeholder="كود السيارة الفريد — RG-2026-001">
+<input id="code" placeholder="كود الزبون الفريد">
 <button id="addCar">حفظ السيارة</button>
+<p id="carMsg" class="msg"></p>
 </div>
 
 <div class="card">
-<h2>إضافة صيانة للسيارة</h2>
-<p class="note">اكتب كود السيارة المحفوظ أعلاه لربط الصيانة بها.</p>
-<input id="serviceCode" placeholder="كود السيارة">
-<input id="serviceType" placeholder="نوع الصيانة — Oil + Filter">
-<textarea id="description" placeholder="تفاصيل الصيانة"></textarea>
-<input id="parts" placeholder="القطع المستخدمة">
-<input id="date" type="date">
-<input id="labor" type="number" min="0" step="0.01" placeholder="كلفة اليد العاملة">
-<input id="partsCost" type="number" min="0" step="0.01" placeholder="كلفة القطع">
-<textarea id="notes" placeholder="ملاحظات إضافية"></textarea>
+<h3>إضافة صيانة</h3>
+<select id="carSelect">
+<option value="">اختَر السيارة</option>
+</select>
+<input id="serviceType" placeholder="نوع الصيانة">
+<textarea id="description" placeholder="تفاصيل الصيانة والقطع"></textarea>
+<input id="serviceDate" type="date">
 <button id="addService">حفظ الصيانة</button>
+<p id="serviceMsg" class="msg"></p>
 </div>
 
-<button id="logoutBtn" class="secondary">تسجيل الخروج</button>
-</section>
+<div class="card">
+<h3>السيارات المسجّلة</h3>
+<button id="refresh" class="secondary">تحديث اللائحة</button>
+<div id="carsList"></div>
+</div>
 
-<p id="msg" role="status"></p>
+<button id="logout" class="secondary">تسجيل الخروج</button>
+</section>
 </main>
 
 <script type="module">
 import { createClient } from
-'https://esm.sh/@supabase/supabase-js@2';
+'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL =
-'https://wcudutpmguznusjgsfpc.supabase.co';
-
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_U7VVE70mueB9LaWMPRIeBQ_HeEJQSMg';
+const SUPABASE_URL = ''https://wcudutpmguznusjgsfpc.supabase.co'';
+const SUPABASE_PUBLISHABLE_KEY = '_SUPABASE_PUBLISHABLE_KEY=sb_publishable_U7VVE70mueB9LaWMPRIeBQ_HeEJQSMg';
 
 const $ = id => document.getElementById(id);
-const say = text => $('msg').textContent = text;
-
 const supabase = createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY
 );
 
-async function refreshSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+function message(id, text) {
+  $(id).textContent = text;
+}
 
-  let isAdmin = false;
+async function checkAdmin() {
+  const { data: { session } } =
+    await supabase.auth.getSession();
+
+  let allowed = false;
 
   if (session) {
     const { data, error } = await supabase
@@ -98,41 +102,84 @@ async function refreshSession() {
       .eq('user_id', session.user.id)
       .maybeSingle();
 
-    isAdmin = !error && data?.role === 'admin';
+    allowed = !error && data?.role === 'admin';
   }
 
-  $('login').classList.toggle('hidden', isAdmin);
-  $('dashboard').classList.toggle('hidden', !isAdmin);
+  $('login').classList.toggle('hidden', allowed);
+  $('dashboard').classList.toggle('hidden', !allowed);
 
-  if (session && !isAdmin) {
+  if (session && !allowed) {
     await supabase.auth.signOut();
-    say('هيدا الحساب ما عنده صلاحية الإدارة.');
+    message('loginMsg', 'هذا الحساب ليس لديه صلاحية الإدارة.');
   }
-}
+
+  if (allowed) await loadCars();
 }
 
 $('loginBtn').onclick = async () => {
+  message('loginMsg', 'جارٍ تسجيل الدخول...');
+
   const email = $('email').value.trim();
   const password = $('password').value;
 
   if (!email || !password) {
-    say('أدخل البريد الإلكتروني وكلمة المرور.');
+    message('loginMsg', 'أدخل البريد الإلكتروني وكلمة المرور.');
     return;
   }
 
-  say('جاري تسجيل الدخول...');
   const { error } = await supabase.auth.signInWithPassword({
     email, password
   });
 
   if (error) {
-    say('فشل تسجيل الدخول: ' + error.message);
+    message('loginMsg', 'فشل الدخول: ' + error.message);
     return;
   }
 
-  say('تم تسجيل الدخول.');
-  await refreshSession();
+  await checkAdmin();
 };
+
+async function loadCars() {
+  const { data, error } = await supabase
+    .from('cars')
+    .select('id,make,model,year,customer_name,plate_number,access_code')
+    .order('make');
+
+  if (error) {
+    message('carsList', 'تعذّر تحميل السيارات: ' + error.message);
+    return;
+  }
+
+  $('carSelect').innerHTML =
+    '<option value="">اختَر السيارة</option>';
+
+  $('carsList').innerHTML = '';
+
+  for (const car of data || []) {
+    const option = document.createElement('option');
+    option.value = car.id;
+    option.textContent =
+      `${car.make} ${car.model} — ${car.customer_name || ''}`;
+    $('carSelect').appendChild(option);
+
+    const item = document.createElement('div');
+    item.className = 'item';
+
+    const title = document.createElement('b');
+    title.textContent =
+      `${car.make} ${car.model} (${car.year || '—'})`;
+
+    const details = document.createElement('p');
+    details.textContent =
+      `الزبون: ${car.customer_name || '—'} | اللوحة: ${car.plate_number || '—'}`;
+
+    const code = document.createElement('p');
+    code.textContent = `كود الزبون: ${car.access_code}`;
+
+    item.append(title, details, code);
+    $('carsList').appendChild(item);
+  }
+}
 
 $('addCar').onclick = async () => {
   const make = $('make').value.trim();
@@ -142,98 +189,75 @@ $('addCar').onclick = async () => {
   const plate_number = $('plate').value.trim();
   const access_code = $('code').value.trim();
 
-  if (!make || !model || !year || !access_code) {
-    say('عبّي الشركة والموديل والسنة وكود السيارة.');
+  if (!make || !model || !access_code) {
+    message('carMsg', 'أدخل الشركة والموديل وكود الزبون.');
     return;
   }
 
-  say('جاري حفظ السيارة...');
   const { error } = await supabase.from('cars').insert([{
-    make, model, year, customer_name,
-    plate_number, access_code
+    make, model,
+    year: year || null,
+    customer_name: customer_name || null,
+    plate_number: plate_number || null,
+    access_code
   }]);
 
   if (error) {
-    say('ما انحفظت السيارة: ' + error.message);
+    message('carMsg', 'تعذّرت إضافة السيارة: ' + error.message);
     return;
   }
 
-  $('serviceCode').value = access_code;
-  say('انحفظت السيارة بنجاح. كودها: ' + access_code);
+  message('carMsg', 'تمت إضافة السيارة بنجاح.');
+  for (const id of ['customer','make','model','year','plate','code']) {
+    $(id).value = '';
+  }
+  await loadCars();
 };
 
 $('addService').onclick = async () => {
-  const access_code = $('serviceCode').value.trim();
+  const car_id = $('carSelect').value;
   const service_type = $('serviceType').value.trim();
   const description = $('description').value.trim();
-  const parts_used = $('parts').value.trim();
-  const service_date = $('date').value;
-  const labor_cost = Number($('labor').value || 0);
-  const parts_cost = Number($('partsCost').value || 0);
-  const notes = $('notes').value.trim();
+  const service_date = $('serviceDate').value ||
+    new Date().toISOString().slice(0, 10);
 
-  if (!access_code || !service_type) {
-    say('أدخل كود السيارة ونوع الصيانة.');
+  if (!car_id || !service_type) {
+    message('serviceMsg', 'اختَر سيارة وأدخل نوع الصيانة.');
     return;
   }
-
-  say('جاري البحث عن السيارة...');
-  const { data: car, error: findError } = await supabase
-    .from('cars')
-    .select('id')
-    .eq('access_code', access_code)
-    .maybeSingle();
-
-  if (findError || !car) {
-    say('ما لقيت السيارة. تأكد من الكود وصلاحيات قاعدة البيانات.');
-    return;
-  }
-
-  const record = {
-    car_id: car.id,
-    service_type,
-    description,
-    parts_used,
-    labor_cost,
-    parts_cost,
-    notes
-  };
-
-  if (service_date) record.service_date = service_date;
 
   const { error } = await supabase
     .from('service_records')
-    .insert([record]);
+    .insert([{
+      car_id,
+      service_type,
+      description,
+      service_date
+    }]);
 
   if (error) {
-    say('ما انحفظت الصيانة: ' + error.message);
+    message('serviceMsg', 'تعذّرت إضافة الصيانة: ' + error.message);
     return;
   }
 
-  say('انحفظ سجل الصيانة بنجاح.');
+  message('serviceMsg', 'تم حفظ الصيانة.');
   $('serviceType').value = '';
   $('description').value = '';
-  $('parts').value = '';
-  $('labor').value = '';
-  $('partsCost').value = '';
-  $('notes').value = '';
 };
 
-$('logoutBtn').onclick = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    say('تعذّر تسجيل الخروج: ' + error.message);
-    return;
-  }
-  say('تم تسجيل الخروج.');
-  await refreshSession();
+$('refresh').onclick = loadCars;
+
+$('logout').onclick = async () => {
+  await supabase.auth.signOut();
+  $('dashboard').classList.add('hidden');
+  $('login').classList.remove('hidden');
 };
 
 supabase.auth.onAuthStateChange(() => {
-  refreshSession();
+  setTimeout(checkAdmin, 0);
 });
 
-await refreshSession();
+checkAdmin();
 </script>
 </body>
 </html>
