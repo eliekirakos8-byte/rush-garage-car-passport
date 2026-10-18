@@ -8,144 +8,214 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#101010;color:#fff;font-family:Arial,sans-serif;padding:16px}
-main{max-width:720px;margin:20px auto}
-header{text-align:center;border-bottom:3px solid #e21b2d;padding:15px}
-h1{color:#ed2538;margin:5px}
+main{max-width:760px;margin:20px auto}
+header{text-align:center;border-bottom:3px solid #e21b2d;padding:16px}
+h1{color:#e21b2d;margin:5px}
 .card{background:#1c1c1c;padding:20px;border-radius:12px;margin:18px 0;border:1px solid #333}
-h2{color:#ff3345;font-size:20px}
-input,button{width:100%;padding:13px;margin:7px 0;border-radius:7px;font-size:16px}
-input{background:#292929;border:1px solid #555;color:white}
-button{background:#df1d30;color:white;border:0;font-weight:bold;cursor:pointer}
-.secondary{background:#333}
+h2{color:#ff3545;font-size:20px}
+input,button,select,textarea{width:100%;padding:13px;margin:7px 0;border-radius:7px;font-size:16px}
+input,select,textarea{background:#292929;border:1px solid #555;color:white}
+button{background:#e21b2d;color:white;border:0;font-weight:bold;cursor:pointer}
+.secondary{background:#444}
 .hidden{display:none}
-#msg{white-space:pre-wrap;line-height:1.7;color:#ffd5d5}
+.note{color:#ccc;font-size:14px;line-height:1.7}
+#msg{white-space:pre-wrap;line-height:1.7}
 </style>
 </head>
 <body>
 <main>
 <header>
 <h1>RUSH GARAGE</h1>
-<p>لوحة إدارة السيارات والصيانة</p>
+<p>Car Passport — لوحة الإدارة</p>
 </header>
 
-<section class="card" id="login">
-<h2>تسجيل الدخول</h2>
-<input id="email" type="email" placeholder="البريد الإلكتروني">
-<input id="password" type="password" placeholder="كلمة السر">
-<button id="loginBtn">دخول</button>
+<section id="login" class="card">
+<h2>تسجيل دخول الإدارة</h2>
+<p class="note">سجّل الدخول بحسابك المسجّل في Supabase Authentication.</p>
+<input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+<input id="password" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+<button id="loginBtn">تسجيل الدخول</button>
 </section>
 
 <section id="dashboard" class="hidden">
 <div class="card">
-<h2>إضافة سيارة</h2>
+<h2>إضافة سيارة جديدة</h2>
+<input id="make" placeholder="الشركة — Volkswagen">
+<input id="model" placeholder="الموديل — Golf / Tiguan">
+<input id="year" type="number" placeholder="سنة الصنع">
 <input id="customer" placeholder="اسم الزبون">
 <input id="plate" placeholder="رقم اللوحة">
-<input id="make" placeholder="ماركة السيارة">
-<input id="model" placeholder="الموديل">
-<input id="year" type="number" placeholder="سنة الصنع">
-<input id="code" placeholder="كود فريد للزبون">
-<button id="carBtn">حفظ السيارة</button>
+<input id="code" placeholder="كود السيارة الفريد — RG-2026-001">
+<button id="addCar">حفظ السيارة</button>
 </div>
 
 <div class="card">
-<h2>إضافة سجل صيانة</h2>
-<input id="carCode" placeholder="كود السيارة">
-<input id="serviceType" placeholder="نوع الصيانة">
-<input id="description" placeholder="تفاصيل الصيانة">
-<input id="partsUsed" placeholder="قطع الغيار المستخدمة">
-<input id="laborCost" type="number" min="0" step="0.01" placeholder="كلفة اليد العاملة">
-<input id="partsCost" type="number" min="0" step="0.01" placeholder="كلفة قطع الغيار">
-<input id="serviceDate" type="date">
-<input id="notes" placeholder="ملاحظات">
-<button id="serviceBtn">حفظ الصيانة</button>
+<h2>إضافة صيانة للسيارة</h2>
+<p class="note">اكتب كود السيارة المحفوظ أعلاه لربط الصيانة بها.</p>
+<input id="serviceCode" placeholder="كود السيارة">
+<input id="serviceType" placeholder="نوع الصيانة — Oil + Filter">
+<textarea id="description" placeholder="تفاصيل الصيانة"></textarea>
+<input id="parts" placeholder="القطع المستخدمة">
+<input id="date" type="date">
+<input id="labor" type="number" min="0" step="0.01" placeholder="كلفة اليد العاملة">
+<input id="partsCost" type="number" min="0" step="0.01" placeholder="كلفة القطع">
+<textarea id="notes" placeholder="ملاحظات إضافية"></textarea>
+<button id="addService">حفظ الصيانة</button>
 </div>
-<button class="secondary" id="logoutBtn">تسجيل الخروج</button>
+
+<button id="logoutBtn" class="secondary">تسجيل الخروج</button>
 </section>
+
 <p id="msg" role="status"></p>
 </main>
 
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from
+'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL = 'https://wcudutpmguznusjgsfpc.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'NEXT_PUBLIC_SUPABASE_URL=https://wcudutpmguznusjgsfpc.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_U7VVE70mueB9LaWMPRIeBQ_HeEJQSMg';
+const SUPABASE_URL =
+'https://wcudutpmguznusjgsfpc.supabase.co';
+
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_U7VVE70mueB9LaWMPRIeBQ_HeEJQSMg';
 
 const $ = id => document.getElementById(id);
 const say = text => $('msg').textContent = text;
-const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-async function refreshSession(){
-  const {data:{session}} = await supabase.auth.getSession();
-  $('login').classList.toggle('hidden',!!session);
-  $('dashboard').classList.toggle('hidden',!session);
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+async function refreshSession() {
+  const { data: { session } } =
+    await supabase.auth.getSession();
+  $('login').classList.toggle('hidden', !!session);
+  $('dashboard').classList.toggle('hidden', !session);
 }
 
 $('loginBtn').onclick = async () => {
-  say('جارٍ تسجيل الدخول...');
-  const {error} = await supabase.auth.signInWithPassword({
-    email:$('email').value.trim(),
-    password:$('password').value
+  const email = $('email').value.trim();
+  const password = $('password').value;
+
+  if (!email || !password) {
+    say('أدخل البريد الإلكتروني وكلمة المرور.');
+    return;
+  }
+
+  say('جاري تسجيل الدخول...');
+  const { error } = await supabase.auth.signInWithPassword({
+    email, password
   });
-  if(error) return say('تعذّر تسجيل الدخول: '+error.message);
+
+  if (error) {
+    say('فشل تسجيل الدخول: ' + error.message);
+    return;
+  }
+
   say('تم تسجيل الدخول.');
   await refreshSession();
 };
 
-$('carBtn').onclick = async () => {
-  const make=$('make').value.trim(), model=$('model').value.trim();
-  const year=Number($('year').value), code=$('code').value.trim();
-  const customer=$('customer').value.trim(), plate=$('plate').value.trim();
-  if(!make||!model||!year||!code||!customer)
-    return say('عبّي اسم الزبون والماركة والموديل والسنة والكود.');
-  say('جارٍ حفظ السيارة...');
-  const {error}=await supabase.from('cars').insert({
-    make,model,year,access_code:code,
-    customer_name:customer,plate_number:plate||null
-  });
-  if(error) return say('لم تُحفظ السيارة: '+error.message);
-  say('تم حفظ السيارة بنجاح.');
+$('addCar').onclick = async () => {
+  const make = $('make').value.trim();
+  const model = $('model').value.trim();
+  const year = Number($('year').value);
+  const customer_name = $('customer').value.trim();
+  const plate_number = $('plate').value.trim();
+  const access_code = $('code').value.trim();
+
+  if (!make || !model || !year || !access_code) {
+    say('عبّي الشركة والموديل والسنة وكود السيارة.');
+    return;
+  }
+
+  say('جاري حفظ السيارة...');
+  const { error } = await supabase.from('cars').insert([{
+    make, model, year, customer_name,
+    plate_number, access_code
+  }]);
+
+  if (error) {
+    say('ما انحفظت السيارة: ' + error.message);
+    return;
+  }
+
+  $('serviceCode').value = access_code;
+  say('انحفظت السيارة بنجاح. كودها: ' + access_code);
 };
 
-$('serviceBtn').onclick = async () => {
-  const code=$('carCode').value.trim();
-  const service_type=$('serviceType').value.trim();
-  if(!code||!service_type) return say('أدخل كود السيارة ونوع الصيانة.');
+$('addService').onclick = async () => {
+  const access_code = $('serviceCode').value.trim();
+  const service_type = $('serviceType').value.trim();
+  const description = $('description').value.trim();
+  const parts_used = $('parts').value.trim();
+  const service_date = $('date').value;
+  const labor_cost = Number($('labor').value || 0);
+  const parts_cost = Number($('partsCost').value || 0);
+  const notes = $('notes').value.trim();
 
-  say('جارٍ البحث عن السيارة...');
-  const {data:car,error:findError}=await supabase
-    .from('cars').select('id').eq('access_code',code).maybeSingle();
-  if(findError) return say('تعذّر البحث: '+findError.message);
-  if(!car) return say('ما لقينا سيارة بهالكود.');
+  if (!access_code || !service_type) {
+    say('أدخل كود السيارة ونوع الصيانة.');
+    return;
+  }
 
-  const record={
-    car_id:car.id,
+  say('جاري البحث عن السيارة...');
+  const { data: car, error: findError } = await supabase
+    .from('cars')
+    .select('id')
+    .eq('access_code', access_code)
+    .maybeSingle();
+
+  if (findError || !car) {
+    say('ما لقيت السيارة. تأكد من الكود وصلاحيات قاعدة البيانات.');
+    return;
+  }
+
+  const record = {
+    car_id: car.id,
     service_type,
-    description:$('description').value.trim()||null,
-    parts_used:$('partsUsed').value.trim()||null,
-    notes:$('notes').value.trim()||null
+    description,
+    parts_used,
+    labor_cost,
+    parts_cost,
+    notes
   };
-  const date=$('serviceDate').value;
-  const labor=$('laborCost').value;
-  const parts=$('partsCost').value;
-  if(date) record.service_date=date;
-  if(labor!=='') record.labor_cost=Number(labor);
-  if(parts!=='') record.parts_cost=Number(parts);
 
-  say('جارٍ حفظ سجل الصيانة...');
-  const {error}=await supabase.from('service_records').insert(record);
-  if(error) return say('لم يُحفظ سجل الصيانة: '+error.message);
-  say('تم حفظ سجل الصيانة بنجاح.');
+  if (service_date) record.service_date = service_date;
+
+  const { error } = await supabase
+    .from('service_records')
+    .insert([record]);
+
+  if (error) {
+    say('ما انحفظت الصيانة: ' + error.message);
+    return;
+  }
+
+  say('انحفظ سجل الصيانة بنجاح.');
+  $('serviceType').value = '';
+  $('description').value = '';
+  $('parts').value = '';
+  $('labor').value = '';
+  $('partsCost').value = '';
+  $('notes').value = '';
 };
 
 $('logoutBtn').onclick = async () => {
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    say('تعذّر تسجيل الخروج: ' + error.message);
+    return;
+  }
   say('تم تسجيل الخروج.');
   await refreshSession();
 };
 
-supabase.auth.onAuthStateChange(() => refreshSession());
-refreshSession();
+supabase.auth.onAuthStateChange(() => {
+  refreshSession();
+});
+
+await refreshSession();
 </script>
 </body>
 </html>
