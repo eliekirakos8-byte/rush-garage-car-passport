@@ -87,10 +87,28 @@ const supabase = createClient(
 );
 
 async function refreshSession() {
-  const { data: { session } } =
-    await supabase.auth.getSession();
-  $('login').classList.toggle('hidden', !!session);
-  $('dashboard').classList.toggle('hidden', !session);
+  const { data: { session } } = await supabase.auth.getSession();
+
+  let isAdmin = false;
+
+  if (session) {
+    const { data, error } = await supabase
+      .from('mechanics')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    isAdmin = !error && data?.role === 'admin';
+  }
+
+  $('login').classList.toggle('hidden', isAdmin);
+  $('dashboard').classList.toggle('hidden', !isAdmin);
+
+  if (session && !isAdmin) {
+    await supabase.auth.signOut();
+    say('هيدا الحساب ما عنده صلاحية الإدارة.');
+  }
+}
 }
 
 $('loginBtn').onclick = async () => {
