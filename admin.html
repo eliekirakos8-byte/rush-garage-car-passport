@@ -1,0 +1,33 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rush Garage | Admin</title>
+  <style>
+    body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif;padding:20px}
+    .box{max-width:600px;margin:30px auto;background:#1d1d1d;padding:24px;border-radius:14px;border-top:4px solid #e21b2d}
+    h1{color:#f12636;text-align:center}
+    input,button{box-sizing:border-box;width:100%;padding:13px;margin:8px 0;border-radius:7px;border:1px solid #555;font-size:16px}
+    input{background:#292929;color:white}
+    button{background:#d7192d;color:white;font-weight:bold;cursor:pointer;border:0}
+    .note{color:#ccc;font-size:14px;line-height:1.7}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>RUSH GARAGE</h1>
+    <p style="text-align:center">لوحة الإدارة الخاصة بالكراج</p>
+    <p class="note">هيدي واجهة أولية. تسجيل الدخول وحفظ بيانات السيارات بدهن ربط آمن مع Supabase قبل الاستخدام.</p>
+    <h3>بيانات السيارة</h3>
+    <input placeholder="اسم الزبون">
+    <input placeholder="رقم اللوحة">
+    <input placeholder="نوع السيارة">
+    <input placeholder="الموديل">
+    <input placeholder="سنة الصنع" type="number">
+    <input placeholder="كود السيارة الفريد">
+    <button type="button" onclick="alert('بعد ربط Supabase رح نفعّل حفظ البيانات')">حفظ السيارة</button>
+  </div>
+</body>
+</html>
