@@ -114,10 +114,23 @@
       <button id="refresh" type="button" class="secondary">
         تحديث قائمة السيارات
       </button>
-      <div id="carsList"></div>
-    </div>
 
-    <button id="logout" type="button" class="secondary">
+<div class="card">
+  <h2>إضافة قطعة سيارة</h2>
+  <form id="partForm">
+    <input id="partName" placeholder="اسم القطعة" required>
+    <input id="partNumber" placeholder="رقم القطعة">
+    <input id="partCars" placeholder="السيارات المناسبة">
+    <input id="partPrice" type="number" min="0" step="0.01" placeholder="السعر">
+    <textarea id="partDescription" placeholder="تفاصيل القطعة"></textarea>
+    <label for="partImage">صورة القطعة</label>
+    <input id="partImage" type="file" accept="image/*" required>
+    <button id="addPart" type="submit">حفظ القطعة</button>
+  </form>
+  <p id="partMsg" role="status"></p>
+  <div id="partsList"></div>
+</div>
+
       تسجيل الخروج
     </button>
   </section>
@@ -354,6 +367,7 @@ $('serviceForm').addEventListener('submit', async event => {
     message('serviceMsg', 'تم حفظ سجل الصيانة بنجاح.');
     $('serviceForm').reset();
     await loadCars();
+    await loadParts();
   } catch (error) {
     message('serviceMsg', 'حدث خطأ: ' + error.message);
   } finally {
@@ -384,6 +398,155 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 });
 
+async function loadParts() {
+  const list = $('partsList');
+  list.replaceChildren();
+
+  const { data, error } = await supabase
+    .from('parts')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    message('partMsg', 'تعذّر تحميل القطع: ' + error.message);
+    return;
+  }
+
+  for (const part of data || []) {
+    const item = document.createElement('div');
+    item.className = 'item';
+
+    if (part.image_url) {
+      const img = document.createElement('img');
+      img.src = part.image_url;
+      img.alt = part.name;
+      img.style.width = '100%';
+      img.style.maxWidth = '260px';
+      img.style.borderRadius = '8px';
+      item.appendChild(img);
+    }
+
+    const title = document.createElement('strong');
+    title.textContent = part.name;
+    item.appendChild(title);
+
+    const details = document.createElement('p');
+    details.textContent =
+      'رقم القطعة: ' + (part.part_number || '-') +
+      ' | السيارات: ' + (part.compatible_cars || '-') +
+      ' | السعر: ' + (part.price ?? '-');
+    item.appendChild(details);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.textContent = 'حذف القطعة';
+    del.className = 'secondary';
+
+    del.addEventListener('click', async () => {
+      if (!confirm('هل تريد حذف هذه القطعة؟')) return;
+
+      const { error: deleteError } = await supabase
+        .from('parts')
+        .delete()
+        .eq('id', part.id);
+
+      if (deleteError) {
+        message('partMsg', 'تعذّر الحذف: ' + deleteError.message);
+        return;
+      }
+
+      if (part.image_url) {
+        const marker = '/storage/v1/object/public/parts-images/';
+        const pos = part.image_url.indexOf(marker);
+
+        if (pos !== -1) {
+          const path = decodeURIComponent(
+            part.image_url.slice(pos + marker.length)
+          );
+
+          await supabase.storage.from('parts-images').remove([path]);
+        }
+      }
+
+      message('partMsg', 'تم حذف القطعة.');
+      await loadParts();
+    });
+
+    item.appendChild(del);
+    list.appendChild(item);
+  }
+}
+
+$('partForm').addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const button = $('addPart');
+  const file = $('partImage').files[0];
+  const name = $('partName').value.trim();
+
+  if (!name || !file) {
+    message('partMsg', 'أدخل اسم القطعة واختر صورتها.');
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    message('partMsg', 'الملف المختار يجب أن يكون صورة.');
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    message('partMsg', 'حجم الصورة يجب ألا يتجاوز 5 MB.');
+    return;
+  }
+
+  button.disabled = true;
+  message('partMsg', 'جارٍ رفع الصورة وحفظ القطعة...');
+
+  let uploadedPath = null;
+
+  try {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = Date.now() + '-' + safeName;
+
+    const { error: uploadError } = await supabase.storage
+      .from('parts-images')
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) throw uploadError;
+    uploadedPath = path;
+
+    const { data: urlData } = supabase.storage
+      .from('parts-images')
+      .getPublicUrl(path);
+
+    const priceValue = $('partPrice').value;
+
+    const { error: insertError } = await supabase.from('parts').insert([{
+      name,
+      part_number: $('partNumber').value.trim() || null,
+      compatible_cars: $('partCars').value.trim() || null,
+      price: priceValue === '' ? null : Number(priceValue),
+      description: $('partDescription').value.trim() || null,
+      image_url: urlData.publicUrl,
+      is_active: true
+    }]);
+
+    if (insertError) throw insertError;
+
+    $('partForm').reset();
+    message('partMsg', 'تمت إضافة القطعة بنجاح.');
+    await loadParts();
+  } catch (error) {
+    if (uploadedPath) {
+      await supabase.storage.from('parts-images').remove([uploadedPath]);
+    }
+
+    message('partMsg', 'تعذّرت إضافة القطعة: ' + error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+            
 checkAdmin().catch(error => {
   message('loginMsg', 'تعذّر تشغيل الصفحة: ' + error.message);
 });
