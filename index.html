@@ -33,6 +33,8 @@ footer{text-align:center;padding:20px;color:#aaa}
   <button class="language" id="langButton" onclick="toggleLanguage()">English</button>
 </header>
 
+
+
 <main>
   <section class="panel">
     <h2 id="title">افحص سجل سيارتك</h2>
@@ -50,6 +52,11 @@ footer{text-align:center;padding:20px;color:#aaa}
     <div id="carInfo"></div>
     <h2 id="historyHeading">سجل الصيانة</h2>
     <div id="records"></div>
+  </section>
+  <section class="panel" id="partsSection">
+  <h2>قطع السيارات | Auto Parts</h2>
+  <p>قطع سيارات وصورها وتفاصيلها من Rush Garage.</p>
+  <div id="publicParts"></div>
   </section>
 </main>
 
@@ -150,6 +157,80 @@ document.getElementById("lookupForm").addEventListener("submit", async function(
     button.textContent=english?"View car history":"عرض سجل السيارة";
   }
 });
+  
+async function loadPublicParts() {
+  const container = document.getElementById('publicParts');
+
+  try {
+    const response = await fetch(
+      SUPABASE_URL +
+      '/rest/v1/parts?select=name,part_number,compatible_cars,price,description,image_url&is_active=eq.true&order=created_at.desc',
+      {
+        headers: {
+          apikey: SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      container.textContent = 'تعذّر تحميل قطع السيارات.';
+      return;
+    }
+
+    const parts = await response.json();
+    container.replaceChildren();
+
+    if (!parts.length) {
+      container.textContent = 'قريباً: قطع السيارات المتوفرة.';
+      return;
+    }
+
+    parts.forEach(part => {
+      const card = document.createElement('article');
+      card.className = 'panel';
+
+      if (part.image_url) {
+        const img = document.createElement('img');
+        img.src = part.image_url;
+        img.alt = part.name;
+        img.style.width = '100%';
+        img.style.maxWidth = '300px';
+        img.style.borderRadius = '10px';
+        img.loading = 'lazy';
+        card.appendChild(img);
+      }
+
+      const title = document.createElement('h3');
+      title.textContent = part.name;
+      card.appendChild(title);
+
+      const details = document.createElement('p');
+      details.textContent =
+        'رقم القطعة: ' + (part.part_number || '-') +
+        ' | السيارات: ' + (part.compatible_cars || '-');
+      card.appendChild(details);
+
+      if (part.price !== null) {
+        const price = document.createElement('p');
+        price.textContent = 'السعر: ' + part.price;
+        card.appendChild(price);
+      }
+
+      if (part.description) {
+        const description = document.createElement('p');
+        description.textContent = part.description;
+        card.appendChild(description);
+      }
+
+      container.appendChild(card);
+    });
+  } catch (error) {
+    container.textContent = 'تعذّر الاتصال لعرض القطع.';
+  }
+}
+
+loadPublicParts();
+
 </script>
 </body>
 </html>
