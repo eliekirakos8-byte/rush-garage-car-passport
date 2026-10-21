@@ -109,12 +109,15 @@
       <p id="serviceMsg" role="status"></p>
     </div>
 
-    <div class="card">
-      <h2>السيارات المسجّلة</h2>
-      <button id="refresh" type="button" class="secondary">
-        تحديث قائمة السيارات
-      </button>
-<div id="carsList"></div>
+
+<div class="card">
+  <h2>السيارات المسجّلة</h2>
+  <button id="refresh" type="button" class="secondary">
+    تحديث قائمة السيارات
+  </button>
+  <div id="carsList"></div>
+</div>
+
 <div class="card">
   <h2>إضافة قطعة سيارة</h2>
   <form id="partForm">
@@ -131,9 +134,11 @@
   <div id="partsList"></div>
 </div>
 
-      تسجيل الخروج
-    </button>
-  </section>
+<button id="logout" type="button" class="secondary">
+  تسجيل الخروج
+</button>
+</section>
+
 </main>
 
 <script type="module">
@@ -199,7 +204,8 @@ async function checkAdmin() {
   $('dashboard').classList.remove('hidden');
   message('loginMsg', '');
 
-  await loadCars();
+await loadCars();
+await loadParts();
 }
 
 $('loginForm').addEventListener('submit', async event => {
