@@ -23,6 +23,7 @@ button{width:100%;padding:14px;margin-top:13px;border:0;border-radius:9px;backgr
 .message{color:#ffaaaa;line-height:1.6}
 .record{padding:14px 0;border-bottom:1px solid #444;line-height:1.7}
 .car-title{color:#ff5555}
+.part-image,.service-image{width:100%;max-width:280px;border-radius:10px;margin:6px 0}
 footer{text-align:center;padding:20px;color:#aaa}
 </style>
 </head>
@@ -30,10 +31,8 @@ footer{text-align:center;padding:20px;color:#aaa}
 <header>
   <div class="logo">RUSH <span>GARAGE</span></div>
   <p id="tagline">جواز السيارة الإلكتروني وسجل الصيانة</p>
-  <button class="language" id="langButton" onclick="toggleLanguage()">English</button>
+  <button class="language" id="langButton" type="button">English</button>
 </header>
-
-
 
 <main>
   <section class="panel">
@@ -41,7 +40,7 @@ footer{text-align:center;padding:20px;color:#aaa}
     <p id="intro" class="muted">أدخل كود السيارة لمعرفة سجل الصيانة.</p>
     <form id="lookupForm">
       <label id="codeLabel" for="accessCode">كود السيارة</label>
-      <input id="accessCode" required minlength="12" autocomplete="off" placeholder="RG-...">
+      <input id="accessCode" required minlength="6" autocomplete="off" placeholder="RG-...">
       <button id="searchButton" type="submit">عرض سجل السيارة</button>
     </form>
     <p id="message" class="message" role="status"></p>
@@ -53,232 +52,232 @@ footer{text-align:center;padding:20px;color:#aaa}
     <h2 id="historyHeading">سجل الصيانة</h2>
     <div id="records"></div>
     <div id="customerParts" hidden>
-  <h3>قطع السيارات المتوفرة</h3>
-  <div id="customerPartsList"></div>
-</div>
-  </section>
-  <section class="panel" id="partsSection">
-  <h2>قطع السيارات | Auto Parts</h2>
-  <p>قطع سيارات وصورها وتفاصيلها من Rush Garage.</p>
-  <div id="publicParts"></div>
+      <h2 id="partsHeading">قطع السيارات المناسبة</h2>
+      <div id="customerPartsList"></div>
+    </div>
   </section>
 </main>
 
 <footer>Rush Garage · Car Passport</footer>
 
 <script>
-const SUPABASE_URL = "https://wcudutpmguznusjgsfpc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_U7VVE70mueB9LaWMPRIeBQ_HeEJQSMg";
-let english = false;
+const SUPABASE_URL="https://wcudutpmguznusjgsfpc.supabase.co";
+const SUPABASE_KEY="sb_publishable_U7VVE70mueB9LaWMPRIeBQ_HeEJQSMg";
+let english=false;
+
+const $=id=>document.getElementById(id);
 
 function toggleLanguage(){
-  english = !english;
-  document.documentElement.lang = english ? "en" : "ar";
-  document.documentElement.dir = english ? "ltr" : "rtl";
-  document.getElementById("tagline").textContent = english ? "Your digital car service history" : "جواز السيارة الإلكتروني وسجل الصيانة";
-  document.getElementById("langButton").textContent = english ? "العربية" : "English";
-  document.getElementById("title").textContent = english ? "Check your car history" : "افحص سجل سيارتك";
-  document.getElementById("intro").textContent = english ? "Enter your car passport code to view service history." : "أدخل كود السيارة لمعرفة سجل الصيانة.";
-  document.getElementById("codeLabel").textContent = english ? "Car access code" : "كود السيارة";
-  document.getElementById("searchButton").textContent = english ? "View car history" : "عرض سجل السيارة";
-  document.getElementById("carHeading").textContent = english ? "Car information" : "معلومات السيارة";
-  document.getElementById("historyHeading").textContent = english ? "Service history" : "سجل الصيانة";
+  english=!english;
+  document.documentElement.lang=english?"en":"ar";
+  document.documentElement.dir=english?"ltr":"rtl";
+  $("tagline").textContent=english?"Your digital car service history":"جواز السيارة الإلكتروني وسجل الصيانة";
+  $("langButton").textContent=english?"العربية":"English";
+  $("title").textContent=english?"Check your car history":"افحص سجل سيارتك";
+  $("intro").textContent=english?"Enter your car passport code to view service history.":"أدخل كود السيارة لمعرفة سجل الصيانة.";
+  $("codeLabel").textContent=english?"Car access code":"كود السيارة";
+  $("searchButton").textContent=english?"View car history":"عرض سجل السيارة";
+  $("carHeading").textContent=english?"Car information":"معلومات السيارة";
+  $("historyHeading").textContent=english?"Service history":"سجل الصيانة";
+  $("partsHeading").textContent=english?"Matching car parts":"قطع السيارات المناسبة";
 }
+$("langButton").addEventListener("click",toggleLanguage);
 
-document.getElementById("lookupForm").addEventListener("submit", async function(e){
+$("lookupForm").addEventListener("submit",async function(e){
   e.preventDefault();
-  const message = document.getElementById("message");
-  const button = document.getElementById("searchButton");
-  const results = document.getElementById("results");
-  message.textContent = "";
-  results.hidden = true;
+  const message=$("message");
+  const button=$("searchButton");
+  const results=$("results");
+  const partsSection=$("customerParts");
+  message.textContent="";
+  results.hidden=true;
+  partsSection.hidden=true;
 
-  if(SUPABASE_URL.includes("_HERE") || SUPABASE_KEY.includes("_HERE")){
-    message.textContent = english ? "Please configure your Supabase URL and publishable key first." : "لازم تحط رابط Supabase والمفتاح العام أولاً.";
-    return;
-  }
-
-  button.disabled = true;
-  button.textContent = english ? "Searching..." : "عم نفتّش...";
+  button.disabled=true;
+  button.textContent=english?"Searching...":"عم نفتّش...";
 
   try{
-    const response = await fetch(SUPABASE_URL.replace(/\/$/,"") + "/rest/v1/rpc/lookup_car_history",{
+    const response=await fetch(SUPABASE_URL+"/rest/v1/rpc/lookup_car_history",{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
         "apikey":SUPABASE_KEY,
         "Authorization":"Bearer "+SUPABASE_KEY
       },
-      body:JSON.stringify({p_access_code:document.getElementById("accessCode").value.trim()})
+      body:JSON.stringify({p_access_code:$("accessCode").value.trim()})
     });
 
-    if(!response.ok) throw new Error("Request failed");
-    const data = await response.json();
+    if(!response.ok){
+      const errorText=await response.text();
+      throw new Error(errorText||"Car lookup failed");
+    }
 
-    if(!data || !data.car){
-      message.textContent = english ? "Car not found. Check the code." : "ما لقينا سيارة بهالكود. تأكّد من الكود.";
+    const data=await response.json();
+
+    if(!data||!data.car){
+      message.textContent=english?"Car not found. Check the code.":"ما لقينا سيارة بهالكود. تأكّد من الكود.";
       return;
     }
 
-    const carInfo = document.getElementById("carInfo");
-    carInfo.replaceChildren();
-    [[english?"Make":"الشركة",data.car.make],[english?"Model":"الموديل",data.car.model],[english?"Year":"سنة الصنع",data.car.year]].forEach(function(item){
-      if(item[1]!==null && item[1]!==undefined && item[1]!==""){
+    $("carInfo").replaceChildren();
+    [
+      [english?"Make":"الشركة",data.car.make],
+      [english?"Model":"الموديل",data.car.model],
+      [english?"Year":"سنة الصنع",data.car.year]
+    ].forEach(function(item){
+      if(item[1]!==null&&item[1]!==undefined&&item[1]!==""){
         const p=document.createElement("p");
         p.textContent=item[0]+": "+item[1];
-        carInfo.appendChild(p);
+        $("carInfo").appendChild(p);
       }
     });
 
-    const records=document.getElementById("records");
+    const records=$("records");
     records.replaceChildren();
 
-    if(!data.service_records || data.service_records.length===0){
+    if(!data.service_records||data.service_records.length===0){
       records.textContent=english?"No service records yet.":"ما في سجلات صيانة مسجّلة بعد.";
     }else{
       data.service_records.forEach(function(r){
         const article=document.createElement("article");
         article.className="record";
+
         const heading=document.createElement("strong");
         heading.className="car-title";
-        heading.textContent=(r.service_type || (english?"Service":"صيانة"))+(r.service_date?" · "+r.service_date:"");
+        heading.textContent=(r.service_type||(english?"Service":"صيانة"))+(r.service_date?" · "+r.service_date:"");
         article.appendChild(heading);
-        [[english?"Description":"الوصف",r.description],[english?"Parts used":"قطع مستعملة",r.parts_used],[english?"Labor cost":"أجرة اليد العاملة",r.labor_cost],[english?"Parts cost":"كلفة القطع",r.parts_cost]].forEach(function(item){
-          if(item[1]!==null && item[1]!==undefined && item[1]!==""){
+
+        [
+          [english?"Description":"الوصف",r.description],
+          [english?"Parts used":"قطع الغيار المستخدمة",r.parts_used],
+          [english?"Labor cost":"أجرة اليد العاملة",r.labor_cost],
+          [english?"Parts cost":"كلفة قطع الغيار",r.parts_cost],
+          [english?"Next oil change":"موعد تغيير الزيت القادم",r.next_oil_change],
+          [english?"Next oil change mileage":"كيلومترات تغيير الزيت القادم",r.next_oil_change_km],
+          [english?"Next revision":"موعد الصيانة الدورية القادمة",r.next_revision],
+          [english?"Next revision mileage":"كيلومترات الصيانة القادمة",r.next_revision_km]
+        ].forEach(function(item){
+          if(item[1]!==null&&item[1]!==undefined&&item[1]!==""){
             const p=document.createElement("p");
             p.textContent=item[0]+": "+item[1];
             article.appendChild(p);
           }
         });
+
+        if(Array.isArray(r.service_photos)&&r.service_photos.length){
+          const label=document.createElement("p");
+          label.textContent=english?"Service photos:":"صور الصيانة وقطع السيارة:";
+          article.appendChild(label);
+
+          r.service_photos.forEach(function(url){
+            if(typeof url!=="string"||!url)return;
+            const img=document.createElement("img");
+            img.src=url;
+            img.alt=english?"Service photo":"صورة الصيانة";
+            img.loading="lazy";
+            img.className="service-image";
+            article.appendChild(img);
+          });
+        }
         records.appendChild(article);
       });
     }
-    await loadCustomerParts(data.car);
+
     results.hidden=false;
+    await loadCustomerParts(data.car);
+
   }catch(error){
-    message.textContent=english?"Connection failed. Check your Supabase settings.":"فشل الاتصال. تأكّد من إعدادات Supabase.";
+    console.error(error);
+    message.textContent=english
+      ?"Connection failed. Check Supabase settings and the lookup function."
+      :"فشل الاتصال. تأكّد من إعدادات Supabase ودالة البحث.";
   }finally{
     button.disabled=false;
     button.textContent=english?"View car history":"عرض سجل السيارة";
   }
 });
-  
 
-async function loadCustomerParts(car) {
-  const section = document.getElementById("customerParts");
-  const container = document.getElementById("customerPartsList");
-
-  if (!section || !container) return;
-
-  section.hidden = false;
+async function loadCustomerParts(car){
+  const section=$("customerParts");
+  const container=$("customerPartsList");
+  section.hidden=false;
   container.replaceChildren();
 
-  const english = typeof window.english !== "undefined"
-    ? window.english
-    : false;
-
-  const loading = document.createElement("p");
-  loading.textContent = english
-    ? "Loading available parts..."
-    : "عم نحمّل قطع السيارات...";
+  const loading=document.createElement("p");
+  loading.textContent=english?"Loading parts...":"عم نحمّل قطع السيارات...";
   container.appendChild(loading);
 
-  try {
-    const response = await fetch(
-      SUPABASE_URL.replace(/\/$/, "") +
-      "/rest/v1/parts?select=name,part_number,compatible_cars,price,description,image_url,is_active&is_active=eq.true&order=created_at.desc",
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: "Bearer " + SUPABASE_KEY
-        }
-      }
+  try{
+    const response=await fetch(
+      SUPABASE_URL+"/rest/v1/parts?select=name,part_number,compatible_cars,price,description,image_url,is_active&is_active=eq.true&order=created_at.desc",
+      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY}}
     );
 
-    if (!response.ok) {
-      throw new Error("Parts request failed");
-    }
+    if(!response.ok)throw new Error(await response.text());
 
-    const parts = await response.json();
+    const parts=await response.json();
     container.replaceChildren();
 
-    const carText = [
-      car.make || "",
-      car.model || "",
-      car.year || ""
-    ].join(" ").toLowerCase();
+    const carText=[car.make||"",car.model||"",car.year||""].join(" ").toLowerCase();
 
-    const matchingParts = parts.filter(function(part) {
-      const compatible = String(part.compatible_cars || "")
-        .toLowerCase()
-        .trim();
-
-      return compatible === "" ||
-        carText.includes(compatible) ||
-        compatible.split(/[,;]+/).some(function(item) {
-          return item.trim() !== "" &&
-            carText.includes(item.trim());
-        });
+    const matchingParts=parts.filter(function(part){
+      const compatible=String(part.compatible_cars||"").toLowerCase().trim();
+      if(!compatible)return false;
+      return compatible.split(/[,;]+/).some(function(item){
+        const name=item.trim();
+        return name!==""&&carText.includes(name);
+      });
     });
 
-    if (!matchingParts.length) {
-      container.textContent = english
-        ? "No matching parts are listed for this car yet."
-        : "ما في قطع مسجّلة ومتوافقة مع هالسيارة حاليًا.";
+    if(!matchingParts.length){
+      container.textContent=english
+        ?"No matching parts are listed for this car yet."
+        :"ما في قطع مسجّلة ومتوافقة مع هالسيارة حاليًا.";
       return;
     }
 
-    matchingParts.forEach(function(part) {
-      const card = document.createElement("article");
-      card.className = "panel";
+    matchingParts.forEach(function(part){
+      const card=document.createElement("article");
+      card.className="record";
 
-      if (part.image_url) {
-        const img = document.createElement("img");
-        img.src = part.image_url;
-        img.alt = part.name || "Car part";
-        img.style.width = "100%";
-        img.style.maxWidth = "300px";
-        img.style.borderRadius = "10px";
-        img.loading = "lazy";
+      if(part.image_url){
+        const img=document.createElement("img");
+        img.src=part.image_url;
+        img.alt=part.name||"Car part";
+        img.loading="lazy";
+        img.className="part-image";
         card.appendChild(img);
       }
 
-      const title = document.createElement("h3");
-      title.textContent = part.name || "";
+      const title=document.createElement("h3");
+      title.textContent=part.name||"";
       card.appendChild(title);
 
-      const details = document.createElement("p");
-      details.textContent =
-        (english ? "Part number: " : "رقم القطعة: ") +
-        (part.part_number || "-") +
-        " | " +
-        (english ? "Compatible cars: " : "السيارات المتوافقة: ") +
-        (part.compatible_cars || "-");
+      const details=document.createElement("p");
+      details.textContent=(english?"Part number: ":"رقم القطعة: ")+(part.part_number||"-")+
+        " | "+(english?"Compatible cars: ":"السيارات المناسبة: ")+(part.compatible_cars||"-");
       card.appendChild(details);
 
-      if (part.price !== null && part.price !== undefined) {
-        const price = document.createElement("p");
-        price.textContent =
-          (english ? "Price: " : "السعر: ") + part.price;
+      if(part.price!==null&&part.price!==undefined){
+        const price=document.createElement("p");
+        price.textContent=(english?"Price: ":"السعر: ")+part.price;
         card.appendChild(price);
       }
 
-      if (part.description) {
-        const description = document.createElement("p");
-        description.textContent = part.description;
+      if(part.description){
+        const description=document.createElement("p");
+        description.textContent=part.description;
         card.appendChild(description);
       }
 
       container.appendChild(card);
     });
-  } catch (error) {
+  }catch(error){
+    console.error(error);
     container.replaceChildren();
-    container.textContent = english
-      ? "Could not load car parts."
-      : "تعذّر تحميل قطع السيارات.";
+    container.textContent=english?"Could not load car parts.":"تعذّر تحميل قطع السيارات.";
   }
 }
 </script>
 </body>
 </html>
-
