@@ -153,6 +153,7 @@ document.getElementById("lookupForm").addEventListener("submit", async function(
         records.appendChild(article);
       });
     }
+    await loadCustomerParts(data.car);
     results.hidden=false;
   }catch(error){
     message.textContent=english?"Connection failed. Check your Supabase settings.":"فشل الاتصال. تأكّد من إعدادات Supabase.";
@@ -162,66 +163,108 @@ document.getElementById("lookupForm").addEventListener("submit", async function(
   }
 });
   
-async function loadPublicParts() {
-  const container = document.getElementById('publicParts');
+
+async function loadCustomerParts(car) {
+  const section = document.getElementById("customerParts");
+  const container = document.getElementById("customerPartsList");
+
+  if (!section || !container) return;
+
+  section.hidden = false;
+  container.replaceChildren();
+
+  const english = typeof window.english !== "undefined"
+    ? window.english
+    : false;
+
+  const loading = document.createElement("p");
+  loading.textContent = english
+    ? "Loading available parts..."
+    : "عم نحمّل قطع السيارات...";
+  container.appendChild(loading);
 
   try {
     const response = await fetch(
-      SUPABASE_URL +
-      '/rest/v1/parts?select=name,part_number,compatible_cars,price,description,image_url&is_active=eq.true&order=created_at.desc',
+      SUPABASE_URL.replace(/\/$/, "") +
+      "/rest/v1/parts?select=name,part_number,compatible_cars,price,description,image_url,is_active&is_active=eq.true&order=created_at.desc",
       {
         headers: {
-          apikey: SUPABASE_KEY
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + SUPABASE_KEY
         }
       }
     );
 
     if (!response.ok) {
-      container.textContent = 'تعذّر تحميل قطع السيارات.';
-      return;
+      throw new Error("Parts request failed");
     }
 
     const parts = await response.json();
     container.replaceChildren();
 
-    if (!parts.length) {
-      container.textContent = 'قريباً: قطع السيارات المتوفرة.';
+    const carText = [
+      car.make || "",
+      car.model || "",
+      car.year || ""
+    ].join(" ").toLowerCase();
+
+    const matchingParts = parts.filter(function(part) {
+      const compatible = String(part.compatible_cars || "")
+        .toLowerCase()
+        .trim();
+
+      return compatible === "" ||
+        carText.includes(compatible) ||
+        compatible.split(/[,;]+/).some(function(item) {
+          return item.trim() !== "" &&
+            carText.includes(item.trim());
+        });
+    });
+
+    if (!matchingParts.length) {
+      container.textContent = english
+        ? "No matching parts are listed for this car yet."
+        : "ما في قطع مسجّلة ومتوافقة مع هالسيارة حاليًا.";
       return;
     }
 
-    parts.forEach(part => {
-      const card = document.createElement('article');
-      card.className = 'panel';
+    matchingParts.forEach(function(part) {
+      const card = document.createElement("article");
+      card.className = "panel";
 
       if (part.image_url) {
-        const img = document.createElement('img');
+        const img = document.createElement("img");
         img.src = part.image_url;
-        img.alt = part.name;
-        img.style.width = '100%';
-        img.style.maxWidth = '300px';
-        img.style.borderRadius = '10px';
-        img.loading = 'lazy';
+        img.alt = part.name || "Car part";
+        img.style.width = "100%";
+        img.style.maxWidth = "300px";
+        img.style.borderRadius = "10px";
+        img.loading = "lazy";
         card.appendChild(img);
       }
 
-      const title = document.createElement('h3');
-      title.textContent = part.name;
+      const title = document.createElement("h3");
+      title.textContent = part.name || "";
       card.appendChild(title);
 
-      const details = document.createElement('p');
+      const details = document.createElement("p");
       details.textContent =
-        'رقم القطعة: ' + (part.part_number || '-') +
-        ' | السيارات: ' + (part.compatible_cars || '-');
+        (english ? "Part number: " : "رقم القطعة: ") +
+        (part.part_number || "-") +
+        " | " +
+        (english ? "Compatible cars: " : "السيارات المتوافقة: ") +
+        (part.compatible_cars || "-");
       card.appendChild(details);
 
-      if (part.price !== null) {
-        const price = document.createElement('p');
-        price.textContent = 'السعر: ' + part.price;
+      if (part.price !== null && part.price !== undefined) {
+        const price = document.createElement("p");
+        price.textContent =
+          (english ? "Price: " : "السعر: ") + part.price;
         card.appendChild(price);
       }
 
       if (part.description) {
-        const description = document.createElement('p');
+        const description = document.createElement("p");
         description.textContent = part.description;
         card.appendChild(description);
       }
@@ -229,12 +272,12 @@ async function loadPublicParts() {
       container.appendChild(card);
     });
   } catch (error) {
-    container.textContent = 'تعذّر الاتصال لعرض القطع.';
+    container.replaceChildren();
+    container.textContent = english
+      ? "Could not load car parts."
+      : "تعذّر تحميل قطع السيارات.";
   }
 }
-
-loadPublicParts();
-
 </script>
 </body>
 </html>
